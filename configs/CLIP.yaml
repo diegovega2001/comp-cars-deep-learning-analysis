@@ -1,0 +1,47 @@
+# ===== DATASET =====
+views: ['front']
+class_granularity: 'model+year'
+min_images: 8
+train_ratio: 0.7
+val_ratio: 0.15
+test_ratio: 0.15
+seed: 3
+image_size: [224, 224]
+grayscale: true
+use_bbox: true
+augment: true
+include_oneshot_in_test: true
+oneshot_ratio: 1.0
+
+# Configuración para descripciones de texto
+description_include: 'full'
+
+# ===== MODELO =====
+model_type: 'multimodal'
+model_name: 'clip-vit-base-patch32'
+objective: 'CLIP'
+
+# ===== ENTRENAMIENTO =====
+sampling_strategy: 'standard'
+batch_size: 256
+num_workers: 2
+pin_memory: true
+device: 'cuda'
+
+# Configuración del optimizador para fine-tuning
+finetune_optimizer_type: 'AdamW'
+finetune_optimizer_weight_decay: 1.0e-1
+
+# Entrenamiento con precisión mixta
+use_amp: True
+
+# ===== FASES DE FINE-TUNING =====  
+clip_finetuning_phases:
+  phase_1_text:
+    type: 'text'
+    lr: 1.0e-5
+    epochs: 40
+    early_stopping: {'patience': 8}
+    save_best: true
+    warmup_steps: 100
+    num_text_layers: 12

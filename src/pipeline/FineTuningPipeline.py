@@ -469,7 +469,17 @@ class FineTuningPipeline:
                 phase_num_vision_layers = int(phase_params.get('num_vision_layers', 1))
                 phase_num_text_layers = int(phase_params.get('num_text_layers', -1))
                 
-                # Separar parámetros con y sin weight decay
+                if phase_type == 'text':
+                    self.model.unfreeze_text_encoder(num_layers=phase_num_text_layers)
+                elif phase_type == 'projection':
+                    self.model.unfreeze_projection_layers()
+                elif phase_type == 'vision':
+                    self.model.unfreeze_vision_final_layers(num_layers=phase_num_vision_layers)
+                elif phase_type == 'projection_refine':
+                    self.model.unfreeze_projection_layers()
+                else:
+                    raise ValueError(f"Fase '{phase_type}' no soportada.")
+                
                 params_with_decay = []
                 params_no_decay = []
                 
@@ -493,17 +503,17 @@ class FineTuningPipeline:
                 logging.info(f"Optimizador {optimizer_type} creado con lr={phase_lr} para fase '{phase_type}'")
                 logging.info(f"Parámetros con weight_decay: {len(params_with_decay)}, sin weight_decay: {len(params_no_decay)}")
                 
-                # Ejecutar fase de fine-tuning
-                training_history_phase = self.model.finetune_phase(
-                    phase=phase_type,
+                # Mostrar parámetros entrenables
+                params_info = self.model.get_trainable_params_count()
+                logging.info(f"Fase '{phase_type}': {params_info['trainable']:,} parámetros entrenables de {params_info['total']:,} totales")
+                
+                training_history_phase = self.model.finetune(
                     optimizer=optimizer,
                     epochs=int(phase_params.get('epochs', 5)),
                     warmup_steps=int(phase_params.get('warmup_steps', 200)),
                     early_stopping=phase_params.get('early_stopping', None),
                     save_best=bool(phase_params.get('save_best', True)),
-                    use_amp=use_amp,
-                    num_vision_layers=phase_num_vision_layers,
-                    num_text_layers=phase_num_text_layers
+                    use_amp=use_amp
                 )
 
                 # Guardamos el history de esta fase
